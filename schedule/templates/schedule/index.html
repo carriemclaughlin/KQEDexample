@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NPR / PBS Schedule</title>
+{% load staticfiles %}
+<link rel="stylesheet" href="{% static 'fullcalendar/fullcalendar.css'%}" />
+</head>
+<body>
+  <h1>NPR / PBS Schedule</h1>
+  <div id="location"></div>
+  <div id="calendar"></div>
+
+<script src="{% static 'fullcalendar/lib/jquery.min.js'%}"></script>
+<script src="{% static 'fullcalendar/lib/moment.min.js'%}"></script>
+<script src="{% static 'fullcalendar/fullcalendar.js'%}"></script>
+<script>
+$(function(){
+    $('#calendar').fullCalendar({
+        // put your options and callbacks here
+    });
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position){
+            $('#location').html( "Latitude: " + position.coords.latitude +"<br>Longitude: " + position.coords.longitude);;
+        });
+    } else { 
+        $('#location').html( "Geolocation is not supported by this browser.");
+    }
+
+});
+</script>
+</body>
+</html>
