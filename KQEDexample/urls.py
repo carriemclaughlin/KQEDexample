@@ -16,8 +16,10 @@ Including another URLconf
 from django.conf.urls import url
 from django.contrib import admin
 from schedule import views
+from filmmap import views as filmmap_views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^$', views.index, name='index'),
+    url(r'^$', filmmap_views.index, name='index'),
+    url(r'^schedule/$', views.index, name='index'),
 ]

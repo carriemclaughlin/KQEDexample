@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NPR / PBS Schedule</title>
+    {% load staticfiles %}
+    <link rel="stylesheet" href="{% static 'fullcalendar/fullcalendar.css'%}" />
+  </head>
+  <body>
+    <h1>NPR / PBS Schedule</h1>
+    {{station}}
+    <form method="get" action="/">
+      search station by zipcode: <input type="text" name="zipcode" value=""/>
+      <button>submit</button>
+    </form>
+    <div id="calendar"></div>
+
+    <script src="{% static 'fullcalendar/lib/jquery.min.js'%}"></script>
+    <script src="{% static 'fullcalendar/lib/moment.min.js'%}"></script>
+    <script src="{% static 'fullcalendar/fullcalendar.js'%}"></script>
+    <script>
+    $(function(){
+        $('#calendar').fullCalendar({
+            header: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'month,agendaWeek,agendaDay,listWeek'
+            }
+        });
+    });
+    </script>
+  </body>
+</html>
+
+
+
+{% load staticfiles %}
+{% load order_tags %}
+{% block script %}
+<script src="{% static 'common/jquery.js' %}"></script>
+<script src="{% static 'order/js/manager.js' %}"></script>
+<script src="{% static 'order/js/map.js' %}"></script>
+<script type="text/javascript">
+  var schoolAddress = [];
+      {% for school_address in school_addresses %}
+          schoolAddress.push({'school_content':'{%if school_address.school.get_website %}<a href="{{school_address.school.get_website}}" target="_blank">{{school_address.school|linebreaksbr}}</a>{%else %}{{school_address.school|linebreaksbr}}{% endif %}<br/>{%if school_address.school.school_types_display %}{{school_address.school.school_types_display}} {% endif %}<br/>','lat':{{school_address.location.y}},
+            'lng':{{school_address.location.x}},'label':'{{forloop.counter}}','school_id':'{{school_address.school.school_id}}'});
+      {% endfor %}
+
+var map, geocoder;
+function initNearbyMap() {
+  geocoder = new google.maps.Geocoder();
+  $('#form_submit').click(function(e) {
+    e.preventDefault();
+    geocoder.geocode( {address: $('#id_location')[0].value}, function(results, status) {
+      if (status == 'OK') {
+        $('#id_latitude')[0].value = results[0].geometry.location.lat();
+        $('#id_longitude')[0].value = results[0].geometry.location.lng();
+        $('#nearby_school_form').submit();
+      } else {
+        alert('Geocode was not successful for the following reason: ' + status);
+      }
+    });
+  });
+
+  {% if latitude %}
+  var myLatlng = {lat: {{latitude|default:0}}, lng: {{longitude|default:0}}};
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: myLatlng,
+    zoom: {{zoom|default:0}}
+  });
+
+  var infowindow = new google.maps.InfoWindow();
+  for (var i = 0; i < schoolAddress.length; i++) {
+    (function() {
+      var marker = new google.maps.Marker({
+        map: map,
+        label: '',
+        position: {'lat':schoolAddress[i].lat,'lng':schoolAddress[i].lng},
+        icon: '//chart.apis.google.com/chart?chst=d_map_pin_letter_withshadow&chld='+schoolAddress[i].label+'|fb6e62|000000'  
+      });
+      var content = schoolAddress[i].school_content;
+      marker.addListener('click', function() {
+        infowindow.setContent(content);
+        infowindow.open(map, marker);
+      });
+    })();
+
+  }
+  {% endif %}
+}
+$(function() {
+  $('.see_affiliated_teacher').click(function(e){
+    e.preventDefault();
+    if($(this).html().indexOf('Hide') == -1 ){
+      $(this).html('Hide affiliated teacher profiles');
+      $(this).next().next('div').removeClass('hidden');
+    } else {
+      $(this).html('See affiliated teacher profiles');
+      $(this).next().next('div').addClass('hidden');
+    }
+  });
+});
+
+</script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD_0v23T8TY8Hd5n6j5VVsezbqDdEqPNcQ&callback=initNearbyMap">
+</script>
+
+{% if intro_form %}
+{{intro_form.media}}
+{% endif %}
+
+{% endblock %}
+{% block content %}
+{% load tz %}
+{% timezone "America/Los_Angeles" %}
+<div class="parents">
+<h1>Nearby Schools</h1>
+{% if intro_form %}
+<button id="edit_intro" class="blue_button" style="margin:0">edit</button>
+{% endif %}
+<div class="intro">
+{% if intro %}
+    {{intro.section|safe}}
+{% else %}
+    This is an experimental search that allows you to find Chinese Schools near you that use 《马立平中文教材》.  The results may not be wholly accurate.  Please contact the school via their website in order to ask about most up-to-date information.<br/><br/>
+
+    If you see some incorrect information for a school, please email <a href="mailto:tech@mlpchinese.com">tech@mlpchinese.com</a> with corrections.<br/><br/> 
+{% endif %}
+</div> 
+{% if intro_form %}
+<div class="intro_form">
+<form method="post" action="{% url 'website:edit_section' %}">
+    {% csrf_token %}
+    {{intro_form}}
+    <input type="hidden" name="next" value="{% url 'order:nearby_schools' %}"/>
+    <button class="blue_button" style="clear:left; display:block">submit</button>
+</form>
+<br style="clear:left"/>
+</div>
+{% endif %}
+
+<form action="{%url 'order:nearby_schools' %}" method="get" id="nearby_school_form">
+    {{form}}   
+    <button type="submit" class="blue_button" id="form_submit">Look for nearby schools</button>
+</form>
+
+{% if latitude and longitude and school_addresses|length == 0 %}
+There are no schools available in this distance.
+{% endif %}
+{%if school_addresses %}
+<div id="map" style="height:300px;width:30%;float:right"></div>
+
+<ol style="width:68%;padding:0;">
+{%for sa in school_addresses %}
+<li style="padding:8px 0 24px">
+    <div style="float:right; color:#126800">{{sa.distance.mi|floatformat}} mi</div>
+    {% if sa.school.school_logo %}<img src="{{sa.school.school_logo.url}}" style="float:left;max-width:100px;max-height:100px;padding-right:5px" alt="School logo for {{sa.school}}"/>{%endif%}
+    <h4 style="display:inline">{{sa.school}}</h4><br>
+    {% if sa.school.school_types_display %}{{sa.school.school_types_display}}<br/>{% endif %}
+    {% if sa.school.has_website %}<a href="{{sa.school.get_website}}" target="_blank">{{sa.school.get_website}}</a><br>{% elif sa.school.schoolcontact_set.all.count > 0 and sa.school.schoolcontact_set.all.0.email%}{{sa.school.schoolcontact_set.all.0.email|default:""}}<br>{% endif %}
+    {% if sa.school.public_contact %}Contact: {{sa.school.public_contact}}<br>{%endif%}
+    {{sa.address|display_city}}<br/>
+    {% if sa.school.public_info%}{{sa.school.public_info|linebreaksbr}}<br/>{% endif %}
+    {% if sa.school.number_of_books_sold != 0 %}estimated number of MLP students: {{sa.school.number_of_books_sold|estimate_students}}{% endif %}
+    {% if sa.school.userprofile_set.all.count > 0 %}
+    <br><a href="#" class="see_affiliated_teacher">See affiliated teacher profiles</a><br>
+    <div class="hidden">
+      {% for userprofile in sa.school.userprofile_set.all %}
+        <a href="{{userprofile.get_absolute_url}}">{{userprofile.name}}</a><br>
+      {% endfor %}
+    </div>
+    {% endif %}
+</li>
+{% endfor %}
+</ul>
+{% endif %}
+</div>
+{% endtimezone %}
+{% endblock %}

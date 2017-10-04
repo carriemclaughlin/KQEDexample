@@ -22,10 +22,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'oxpcr7hklz*l6xv&mhiwf8-=6w6z^=rbg$5&*2r=zygvtivq)e'
 
+PBS_AUTH = ('c8l6FTp2tSLaJeZ9', 'GsHJWPHt3eSqex8pE2vp5JJ7HcA0aNmb')
+
+GOOGLE_AUTH = 'AIzaSyBMYZemz8CUR0h5x-h6K59z9e7FE-pm5to'
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['example.carrielicious.com']
+ALLOWED_HOSTS = ['example.carrielicious.com','localhost','99ac0714.ngrok.io']
 
 
 # Application definition
@@ -37,7 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'schedule',
+    'filmmap',
 ]
 
 MIDDLEWARE = [
@@ -76,11 +82,11 @@ WSGI_APPLICATION = 'KQEDexample.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'kqed',
+        'USER': 'carrie'
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -100,6 +106,25 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR + '/debug.log',
+        },
+    },
+    'loggers': {
+        'filmmap': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
